@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Primelink Sourcing - Create RFQ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .logo { text-align: center; margin-bottom: 20px; }
+        .logo-circle { width: 60px; height: 60px; background: #667eea; border-radius: 50%; margin: 0 auto; line-height: 60px; }
+        .logo-text { font-size: 24px; font-weight: bold; color: white; }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        h2 { font-size: 16px; color: #667eea; margin: 20px 0 10px 0; border-left: 3px solid #667eea; padding-left: 10px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 150px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #555; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .item-card { background: #f8f9fa; border: 1px solid #eee; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+        .item-fields { display: flex; gap: 10px; flex-wrap: wrap; }
+        .item-fields input { flex: 1; min-width: 100px; }
+        .remove-item { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; font-size: 12px; }
+        .add-item { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 10px 0; }
+        .btn-generate { background: #667eea; color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 20px; }
+        .result { margin-top: 30px; padding: 20px; background: #d4edda; border-radius: 10px; display: none; text-align: center; }
+        .result a { color: #28a745; font-size: 16px; }
+        .info-note { background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 12px; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"><div class="logo-circle"><span class="logo-text">PLS</span></div></div>
+        <h1>Create Request for Quotation (RFQ)</h1>
+        <p class="subtitle">Send to sellers/suppliers to get their best prices</p>
+        
+        <h2>Seller Information</h2>
+        <div class="form-row">
+            <div class="form-group"><label>Company Name *</label><input type="text" id="customerCompany" placeholder="Seller/Supplier Company Name" value="Shandong Jiusheng Intelligent Equipment Co. Ltd."></div>
+            <div class="form-group"><label>Contact Person *</label><input type="text" id="customerName" placeholder="Contact Person Name" value="Emily Guo"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Email *</label><input type="email" id="customerEmail" placeholder="seller@company.com" value="lynn@sd.jiusheng.com"></div>
+            <div class="form-group"><label>Phone</label><input type="text" id="customerPhone" placeholder="Phone Number"></div>
+        </div>
+        
+        <h2>Items You Want to Buy</h2>
+        <div id="itemsContainer"></div>
+        <button type="button" class="add-item" onclick="addItem()">+ Add Item</button>
+        
+        <h2>Special Instructions / Requirements</h2>
+        <textarea id="notes" rows="3" placeholder="Delivery deadline, quality requirements, payment terms..."></textarea>
+        
+        <div class="form-row">
+            <div class="form-group"><label>Response Deadline (days)</label><input type="number" id="validDays" value="30"></div>
+        </div>
+        
+        <button class="btn-generate" onclick="generateRFQ()">📄 Generate RFQ PDF</button>
+        
+        <div id="result" class="result">
+            <h3>✅ RFQ Created!</h3>
+            <p>Send this PDF to the seller:</p>
+            <p><a id="downloadLink" href="#" target="_blank">📥 Click here to download RFQ PDF</a></p>
+            <div class="info-note">
+                <strong>📌 How it works:</strong><br>
+                1. Send the PDF to the seller (email/WhatsApp)<br>
+                2. Seller clicks the "CLICK HERE TO VIEW QUOTATION" button<br>
+                3. Seller fills in their prices online<br>
+                4. You receive their quotation instantly<br>
+                5. Review and accept the best offer
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let items = [];
+        let itemCounter = 0;
+        
+        function addItem() {
+            const id = itemCounter++;
+            items.push({ id, name: '', quantity: 1, unit: 'pcs' });
+            renderItems();
+        }
+        
+        function removeItem(id) {
+            items = items.filter(item => item.id !== id);
+            renderItems();
+        }
+        
+        function updateItem(id, field, value) {
+            const item = items.find(item => item.id === id);
+            if (item) item[field] = value;
+        }
+        
+        function renderItems() {
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No items added. Click "Add Item" to start.</p>';
+                return;
+            }
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <div class="item-fields">
+                        <input type="text" placeholder="Item/Product name" value="${item.name.replace(/"/g, '&quot;')}" onchange="updateItem(${item.id}, 'name', this.value)">
+                        <input type="number" placeholder="Quantity" value="${item.quantity}" onchange="updateItem(${item.id}, 'quantity', parseFloat(this.value))">
+                        <input type="text" placeholder="Unit (pcs, kg, box)" value="${item.unit}" onchange="updateItem(${item.id}, 'unit', this.value)">
+                    </div>
+                    <button class="remove-item" onclick="removeItem(${item.id})">✖ Remove Item</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        async function generateRFQ() {
+            const customerCompany = document.getElementById('customerCompany').value;
+            const customerName = document.getElementById('customerName').value;
+            const customerEmail = document.getElementById('customerEmail').value;
+            
+            if (!customerCompany || !customerName || !customerEmail) {
+                alert('Please fill in seller company, contact person, and email');
+                return;
+            }
+            
+            const validItems = items.filter(item => item.name && item.name.trim() !== '' && item.quantity > 0);
+            if (validItems.length === 0) {
+                alert('Please add at least one valid item with name and quantity');
+                return;
+            }
+            
+            const data = {
+                customerCompany,
+                customerName,
+                customerEmail,
+                customerPhone: document.getElementById('customerPhone').value,
+                items: validItems,
+                notes: document.getElementById('notes').value,
+                validDays: parseInt(document.getElementById('validDays').value) || 30
+            };
+            
+            const res = await fetch('/api/create-quotation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                document.getElementById('downloadLink').href = result.downloadLink;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('Error: ' + result.message);
+            }
+        }
+        
+        // Add one empty item to start
+        addItem();
+    </script>
+</body>
+</html>

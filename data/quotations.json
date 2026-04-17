@@ -1,0 +1,91 @@
+[
+  {
+    "id": "3975c0e8-5164-4c0c-ab39-f6bb0283e70f",
+    "customerCompany": "Crane Floklift Company",
+    "customerName": "Grey Smith",
+    "customerEmail": "cranefloklift@gmail.com",
+    "customerPhone": "+1 709-866-7507",
+    "supplierName": "Primelink ",
+    "supplierAddress": "2345 street, Toronto Canada",
+    "supplierEmail": "primelink@gmail.com",
+    "supplierPhone": "+1 709-866-7507",
+    "items": [
+      {
+        "name": "Truck crane ",
+        "quantity": 100,
+        "price": 10000
+      },
+      {
+        "name": "Floklift",
+        "quantity": 50,
+        "price": 10000
+      },
+      {
+        "name": "Hanging basket",
+        "quantity": 29,
+        "price": 100000
+      }
+    ],
+    "taxRate": 0,
+    "notes": "",
+    "createdAt": "2026-04-16T14:21:56.905Z",
+    "validUntil": "2026-05-16T14:21:56.905Z",
+    "status": "pending"
+  },
+  {
+    "id": "99f98b98-cc2a-4e41-9fec-8a2e706029bf",
+    "customerCompany": "Shandong Jiusheng Intelligent Equipment Co. Ltd. ",
+    "customerName": "Emily Guo",
+    "customerEmail": "lynn@sd.jiusheng.com",
+    "customerPhone": "",
+    "items": [
+      {
+        "name": "Truck Crane ",
+        "quantity": 100,
+        "unit": "pcs"
+      },
+      {
+        "name": "Hanging Basket ",
+        "quantity": 202,
+        "unit": "pcs"
+      },
+      {
+        "name": "Ship Crane ",
+        "quantity": 101,
+        "unit": "pcs"
+      }
+    ],
+    "notes": "Hello Emily, here's the list of products we are requesting for, please do well to give us your pricing quotation via this webpage to make things transparent. ",
+    "createdAt": "2026-04-17T14:53:01.527Z",
+    "validUntil": "2026-05-17T14:53:01.527Z",
+    "status": "pending"
+  },
+  {
+    "id": "2b585631-e5fe-455d-9d53-2e9e620d8be5",
+    "customerCompany": "Shandong Jiusheng Intelligent Equipment Co. Ltd.",
+    "customerName": "Emily Guo",
+    "customerEmail": "lynn@sd.jiusheng.com",
+    "customerPhone": "",
+    "items": [
+      {
+        "name": "Truck Crane ",
+        "quantity": 10,
+        "unit": "pcs"
+      },
+      {
+        "name": "Hanging Basket",
+        "quantity": 50,
+        "unit": "pcs"
+      },
+      {
+        "name": "Off - Road Forklift",
+        "quantity": 20,
+        "unit": "pcs"
+      }
+    ],
+    "notes": "hello",
+    "createdAt": "2026-04-17T16:01:04.496Z",
+    "validUntil": "2026-05-17T16:01:04.496Z",
+    "status": "pending"
+  }
+]
