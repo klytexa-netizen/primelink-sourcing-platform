@@ -142,7 +142,7 @@ async function generatePDF(quotation, filepath) {
         doc.rect(buttonX, buttonY, buttonWidth, buttonHeight).fill('#28a745');
         doc.rect(buttonX, buttonY, buttonWidth, 5).fill('#3cb043');
         
-        const viewUrl = `https://YOUR-RENDER-URL.onrender.com/view/${quotation.id}`;
+        const viewUrl = `https://primelink-sourcing-platform.onrender.com/view/${quotation.id}`;
         
         doc.fontSize(20)
            .font('Helvetica-Bold')
