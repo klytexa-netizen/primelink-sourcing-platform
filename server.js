@@ -49,7 +49,6 @@ function updateQuotationStatus(id, status, submittedPrices, sellerNotes, taxRate
         quotations[index].shippingCost = shippingCost;
         quotations[index].submittedAt = new Date().toISOString();
         
-        // Calculate totals
         const subtotal = submittedPrices.reduce((sum, p) => sum + (p.price * p.quantity), 0);
         const tax = subtotal * (taxRate / 100);
         const grandTotal = subtotal + tax + (shippingCost || 0);
@@ -58,7 +57,6 @@ function updateQuotationStatus(id, status, submittedPrices, sellerNotes, taxRate
         
         fs.writeFileSync(QUOTATIONS_FILE, JSON.stringify(quotations, null, 2));
         
-        // Save to submitted quotes file
         const submitted = JSON.parse(fs.readFileSync(SUBMITTED_QUOTES_FILE, 'utf8'));
         submitted.push({
             quotationId: id,
@@ -79,21 +77,19 @@ function updateQuotationStatus(id, status, submittedPrices, sellerNotes, taxRate
     return false;
 }
 
-// Generate ONE PAGE COMPLETELY FROSTED PDF (only logo + button visible)
+// Generate PDF
 async function generatePDF(quotation, filepath) {
     return new Promise(async (resolve, reject) => {
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
         const stream = fs.createWriteStream(filepath);
         doc.pipe(stream);
         
-        // Frosted background
         doc.rect(0, 0, doc.page.width, doc.page.height).fill('#e8e8e8');
         doc.save();
         doc.opacity(0.7);
         doc.rect(0, 0, doc.page.width, doc.page.height).fill('#ffffff');
         doc.restore();
         
-        // PLS Logo (visible but slightly faded)
         doc.opacity(0.6);
         doc.circle(250, 100, 45).fill('#667eea');
         doc.fillColor('#ffffff')
@@ -102,7 +98,6 @@ async function generatePDF(quotation, filepath) {
            .text('PLS', 230, 85);
         doc.opacity(1);
         
-        // Faded company name
         doc.opacity(0.15);
         doc.fontSize(14)
            .font('Helvetica-Bold')
@@ -114,13 +109,11 @@ async function generatePDF(quotation, filepath) {
            .text('Sourcing & Procurement Division', 200, 185, { align: 'center' })
            .text('Email: sourcing@primelink.com | Phone: +1 647 555 0123', 200, 200, { align: 'center' });
         
-        // Faded title
         doc.fontSize(18)
            .font('Helvetica-Bold')
            .fillColor('#667eea')
            .text('REQUEST FOR QUOTATION (RFQ)', 200, 240, { align: 'center' });
         
-        // Blurred content block
         doc.opacity(0.1);
         doc.rect(50, 280, 500, 180).fill('#aaaaaa');
         doc.fontSize(12)
@@ -130,7 +123,6 @@ async function generatePDF(quotation, filepath) {
            .text('Click the button below to view the complete quotation', 250, 380, { align: 'center' });
         doc.opacity(1);
         
-        // Big green button (CLEAR AND VISIBLE)
         const buttonY = 490;
         const buttonWidth = 420;
         const buttonHeight = 70;
@@ -142,7 +134,8 @@ async function generatePDF(quotation, filepath) {
         doc.rect(buttonX, buttonY, buttonWidth, buttonHeight).fill('#28a745');
         doc.rect(buttonX, buttonY, buttonWidth, 5).fill('#3cb043');
         
-        const viewUrl = `https://primelink-sourcing-platform.onrender.com/view/${quotation.id}`;
+        const baseUrl = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+        const viewUrl = `${baseUrl}/view/${quotation.id}`;
         
         doc.fontSize(20)
            .font('Helvetica-Bold')
@@ -158,7 +151,6 @@ async function generatePDF(quotation, filepath) {
                link: viewUrl
            });
         
-        // Instructions
         const instY = buttonY + 100;
         doc.fontSize(9)
            .fillColor('#555')
@@ -168,7 +160,6 @@ async function generatePDF(quotation, filepath) {
            .text('3. View the complete, clear quotation with all details', 50, instY + 48)
            .text('4. Submit your prices online', 50, instY + 63);
         
-        // Footer
         const pageHeight = doc.page.height;
         doc.fontSize(8)
            .fillColor('#999')
@@ -229,17 +220,46 @@ app.post('/api/create-quotation', async (req, res) => {
     }
 });
 
-// SELLER PAGE - Submit Prices Online
+// ========== FIXED VIEW ROUTE ==========
 app.get('/view/:id', (req, res) => {
     const id = req.params.id;
+    console.log('🔍 Looking for quotation with ID:', id);
+    
     const quotations = getQuotations();
+    console.log('📊 Total quotations in database:', quotations.length);
+    
     const quotation = quotations.find(q => q.id === id);
     
     if (!quotation) {
-        return res.send('<h1>RFQ not found</h1>');
+        console.log('❌ Quotation NOT found for ID:', id);
+        return res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>RFQ Not Found</title>
+                <style>
+                    body { font-family: Arial; text-align: center; padding: 50px; }
+                    .error-box { background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto; }
+                </style>
+            </head>
+            <body>
+                <div class="error-box">
+                    <h1>❌ RFQ Not Found</h1>
+                    <p>The quotation you're looking for does not exist or may have expired.</p>
+                    <p><strong>ID searched:</strong> ${id}</p>
+                    <p>Please contact the sender for a valid quotation link.</p>
+                </div>
+            </body>
+            </html>
+        `);
     }
     
+    console.log('✅ Quotation FOUND for:', quotation.customerCompany);
+    
     const isSubmitted = quotation.status === 'quoted';
+    const subtotal = quotation.items.reduce((sum, item) => sum + (item.quantity * (item.price || 0)), 0);
+    const tax = subtotal * ((quotation.taxRate || 0) / 100);
+    const grandTotal = subtotal + tax + (quotation.shippingCost || 0);
     
     res.send(`
         <!DOCTYPE html>
@@ -280,6 +300,7 @@ app.get('/view/:id', (req, res) => {
                         <h2>✅ QUOTATION ALREADY SUBMITTED</h2>
                         <p>You have already submitted your prices for this RFQ.</p>
                         <p>Submitted on: ${new Date(quotation.submittedAt).toLocaleString()}</p>
+                        <p><strong>Your Grand Total:</strong> $${(quotation.grandTotal || 0).toFixed(2)}</p>
                     </div>
                 ` : `
                     <h1>💰 Submit Your Quotation</h1>
@@ -299,6 +320,8 @@ app.get('/view/:id', (req, res) => {
                         </div>
                     </div>
                     
+                    ${quotation.notes ? `<div class="info-box"><strong>📝 Message from Buyer:</strong><br>${quotation.notes}</div>` : ''}
+                    
                     <h3>Items & Your Pricing</h3>
                     <table id="itemsTable">
                         <thead>
@@ -310,22 +333,22 @@ app.get('/view/:id', (req, res) => {
                                     <td>${item.name}</td>
                                     <td>${item.quantity}</td>
                                     <td>${item.unit || 'pcs'}</td>
-                                    <td><input type="number" class="price-input" id="price_${index}" step="0.01" placeholder="Enter price"></td>
-                                    <td class="total_${index}">$0.00</td>
-                                 </tr>
+                                    <td><input type="number" class="price-input" id="price_${index}" step="0.01" placeholder="Enter price" value="${item.price || ''}"></td>
+                                    <td class="total_${index}">$${((item.price || 0) * item.quantity).toFixed(2)}</td>
+                                </tr>
                             `).join('')}
                         </tbody>
                         <tfoot>
-                            <tr><td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td><td id="subtotal">$0.00</td></tr>
-                            <tr><td colspan="4" style="text-align: right;"><strong>Tax (%):</strong></td><td><input type="number" id="taxRate" step="0.1" value="0" style="width: 80px;"> %</td></tr>
-                            <tr><td colspan="4" style="text-align: right;"><strong>Shipping Cost:</strong></td><td><input type="number" id="shippingCost" step="0.01" value="0" style="width: 100px;"></td></tr>
-                            <tr style="background: #667eea; color: white;"><td colspan="4" style="text-align: right;"><strong>GRAND TOTAL:</strong></td><td id="grandTotal">$0.00</td></tr>
+                            <tr><td colspan="4" style="text-align: right;"><strong>Subtotal:</strong></td><td id="subtotal">$${subtotal.toFixed(2)}</td></tr>
+                            <tr><td colspan="4" style="text-align: right;"><strong>Tax (%):</strong></td><td><input type="number" id="taxRate" step="0.1" value="${quotation.taxRate || 0}" style="width: 80px;"> %</td></tr>
+                            <tr><td colspan="4" style="text-align: right;"><strong>Shipping Cost:</strong></td><td><input type="number" id="shippingCost" step="0.01" value="${quotation.shippingCost || 0}" style="width: 100px;"></td></tr>
+                            <tr style="background: #667eea; color: white;"><td colspan="4" style="text-align: right;"><strong>GRAND TOTAL:</strong></td><td id="grandTotal">$${grandTotal.toFixed(2)}</td></tr>
                         </tfoot>
                     </table>
                     
                     <div class="info-box">
                         <strong>📝 Additional Notes (optional):</strong><br>
-                        <textarea id="sellerNotes" rows="3" style="width: 100%; margin-top: 10px; padding: 10px;" placeholder="Delivery terms, payment terms, validity of this quote..."></textarea>
+                        <textarea id="sellerNotes" rows="3" style="width: 100%; margin-top: 10px; padding: 10px;" placeholder="Delivery terms, payment terms, validity of this quote...">${quotation.sellerNotes || ''}</textarea>
                     </div>
                     
                     <button onclick="submitQuotation()">📧 Submit Quotation to Buyer</button>
@@ -339,6 +362,7 @@ app.get('/view/:id', (req, res) => {
             </div>
             
             <script>
+                const quotationId = '${quotation.id}';
                 const items = ${JSON.stringify(quotation.items)};
                 
                 function calculateTotals() {
@@ -346,9 +370,10 @@ app.get('/view/:id', (req, res) => {
                     
                     items.forEach((item, index) => {
                         const priceInput = document.getElementById(\`price_\${index}\`);
-                        const price = parseFloat(priceInput.value) || 0;
+                        const price = parseFloat(priceInput?.value) || 0;
                         const total = price * item.quantity;
-                        document.querySelector(\`.total_\${index}\`).textContent = \`$\${total.toFixed(2)}\`;
+                        const totalCell = document.querySelector(\`.total_\${index}\`);
+                        if (totalCell) totalCell.textContent = \`$\${total.toFixed(2)}\`;
                         subtotal += total;
                     });
                     
@@ -357,30 +382,43 @@ app.get('/view/:id', (req, res) => {
                     const tax = subtotal * (taxRate / 100);
                     const grandTotal = subtotal + tax + shippingCost;
                     
-                    document.getElementById('subtotal').textContent = \`$\${subtotal.toFixed(2)}\`;
-                    document.getElementById('grandTotal').textContent = \`$\${grandTotal.toFixed(2)}\`;
+                    const subtotalEl = document.getElementById('subtotal');
+                    const grandTotalEl = document.getElementById('grandTotal');
+                    if (subtotalEl) subtotalEl.textContent = \`$\${subtotal.toFixed(2)}\`;
+                    if (grandTotalEl) grandTotalEl.textContent = \`$\${grandTotal.toFixed(2)}\`;
                 }
                 
-                document.querySelectorAll('.price-input').forEach(input => {
-                    input.addEventListener('input', calculateTotals);
-                });
-                document.getElementById('taxRate')?.addEventListener('input', calculateTotals);
-                document.getElementById('shippingCost')?.addEventListener('input', calculateTotals);
+                function attachEventListeners() {
+                    document.querySelectorAll('.price-input').forEach(input => {
+                        input.removeEventListener('input', calculateTotals);
+                        input.addEventListener('input', calculateTotals);
+                    });
+                    const taxRateEl = document.getElementById('taxRate');
+                    const shippingEl = document.getElementById('shippingCost');
+                    if (taxRateEl) {
+                        taxRateEl.removeEventListener('input', calculateTotals);
+                        taxRateEl.addEventListener('input', calculateTotals);
+                    }
+                    if (shippingEl) {
+                        shippingEl.removeEventListener('input', calculateTotals);
+                        shippingEl.addEventListener('input', calculateTotals);
+                    }
+                }
                 
                 async function submitQuotation() {
                     const prices = [];
                     let hasPrices = false;
                     
-                    items.forEach((item, index) => {
-                        const priceInput = document.getElementById(\`price_\${index}\`);
-                        const price = parseFloat(priceInput.value);
+                    for (let i = 0; i < items.length; i++) {
+                        const priceInput = document.getElementById(\`price_\${i}\`);
+                        const price = parseFloat(priceInput?.value);
                         if (price > 0) hasPrices = true;
                         prices.push({
-                            name: item.name,
-                            quantity: item.quantity,
+                            name: items[i].name,
+                            quantity: items[i].quantity,
                             price: price || 0
                         });
-                    });
+                    }
                     
                     if (!hasPrices) {
                         alert('Please enter at least one price before submitting.');
@@ -395,7 +433,7 @@ app.get('/view/:id', (req, res) => {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            quotationId: '${quotation.id}',
+                            quotationId: quotationId,
                             prices: prices,
                             sellerNotes: sellerNotes,
                             taxRate: taxRate,
@@ -417,6 +455,9 @@ app.get('/view/:id', (req, res) => {
                         messageDiv.style.display = 'block';
                     }
                 }
+                
+                attachEventListeners();
+                calculateTotals();
             </script>
         </body>
         </html>
@@ -456,6 +497,146 @@ app.get('/api/quotations', (req, res) => {
 app.get('/api/submitted-quotes', (req, res) => {
     const submitted = JSON.parse(fs.readFileSync(SUBMITTED_QUOTES_FILE, 'utf8'));
     res.json({ success: true, count: submitted.length, submitted });
+});
+
+// Dashboard to view submitted quotes
+app.get('/dashboard', (req, res) => {
+    const quotations = getQuotations();
+    const submittedQuotes = quotations.filter(q => q.status === 'quoted');
+    
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Dashboard - Submitted Quotes</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 40px; }
+                .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+                h1 { color: #667eea; margin-bottom: 10px; }
+                .stats { display: flex; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+                .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; flex: 1; min-width: 150px; text-align: center; }
+                .stat-number { font-size: 36px; font-weight: bold; }
+                .stat-label { font-size: 14px; opacity: 0.9; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background: #667eea; color: white; }
+                .status-pending { background: #ffc107; color: #333; padding: 4px 8px; border-radius: 5px; font-size: 12px; }
+                .status-quoted { background: #28a745; color: white; padding: 4px 8px; border-radius: 5px; font-size: 12px; }
+                .view-btn { background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 12px; }
+                .view-btn:hover { background: #5a67d8; }
+                .quote-details { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 10px; display: none; }
+                .quote-details.show { display: block; }
+                .total-box { background: #e8f4f8; padding: 10px; border-radius: 8px; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>📊 Primelink Sourcing Dashboard</h1>
+                <p>View all RFQs and submitted quotations from sellers</p>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">${quotations.length}</div>
+                        <div class="stat-label">Total RFQs Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${submittedQuotes.length}</div>
+                        <div class="stat-label">Quotes Received</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${quotations.length - submittedQuotes.length}</div>
+                        <div class="stat-label">Pending Response</div>
+                    </div>
+                </div>
+                
+                <h2>All Requests for Quotation (RFQ)</h2>
+                <table>
+                    <thead>
+                        <tr><th>Date</th><th>Seller Company</th><th>Items</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        ${quotations.map(q => `
+                            <tr>
+                                <td>${new Date(q.createdAt).toLocaleDateString()}</td>
+                                <td><strong>${q.customerCompany}</strong><br><small>${q.customerName}</small></td>
+                                <td>${q.items.length} items</td>
+                                <td><span class="status-${q.status}">${q.status === 'quoted' ? '✓ QUOTE RECEIVED' : '⏳ PENDING'}</span></td>
+                                <td><button class="view-btn" onclick="toggleDetails('${q.id}')">View Details</button></td>
+                            </tr>
+                            <tr id="details-${q.id}" style="display: none; background: #f8f9fa;">
+                                <td colspan="5">
+                                    <div style="padding: 20px;">
+                                        <h3>📋 RFQ Details</h3>
+                                        <p><strong>Seller:</strong> ${q.customerCompany}</p>
+                                        <p><strong>Contact:</strong> ${q.customerName} (${q.customerEmail})</p>
+                                        <p><strong>Date Sent:</strong> ${new Date(q.createdAt).toLocaleString()}</p>
+                                        <p><strong>Valid Until:</strong> ${new Date(q.validUntil).toLocaleDateString()}</p>
+                                        
+                                        ${q.notes ? `<p><strong>Your Notes:</strong> ${q.notes}</p>` : ''}
+                                        
+                                        <h4>Items Requested:</h4>
+                                        <table style="width: 100%; margin: 10px 0;">
+                                            <thead><tr><th>Item</th><th>Quantity</th><th>Unit</th></tr></thead>
+                                            <tbody>
+                                                ${q.items.map(item => `<tr><td>${item.name}</td><td>${item.quantity}</td><td>${item.unit || 'pcs'}</td></tr>`).join('')}
+                                            </tbody>
+                                        </table>
+                                        
+                                        ${q.status === 'quoted' ? `
+                                            <div style="background: #d4edda; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                                                <h3>💰 SELLER'S QUOTATION</h3>
+                                                <p><strong>Submitted on:</strong> ${new Date(q.submittedAt).toLocaleString()}</p>
+                                                <h4>Prices Submitted:</h4>
+                                                <table style="width: 100%; margin: 10px 0;">
+                                                    <thead><tr><th>Item</th><th>Quantity</th><th>Price per Unit</th><th>Total</th></tr></thead>
+                                                    <tbody>
+                                                        ${(q.submittedPrices || []).map(p => `
+                                                            <tr>
+                                                                <td>${p.name}</td>
+                                                                <td>${p.quantity}</td>
+                                                                <td>$${p.price.toFixed(2)}</td>
+                                                                <td>$${(p.price * p.quantity).toFixed(2)}</td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                                <div class="total-box">
+                                                    <p><strong>Subtotal:</strong> $${(q.subtotal || 0).toFixed(2)}</p>
+                                                    <p><strong>Tax (${q.taxRate || 0}%):</strong> $${((q.subtotal || 0) * (q.taxRate || 0) / 100).toFixed(2)}</p>
+                                                    <p><strong>Shipping:</strong> $${(q.shippingCost || 0).toFixed(2)}</p>
+                                                    <p style="font-size: 20px; margin-top: 10px;"><strong>GRAND TOTAL:</strong> $${(q.grandTotal || 0).toFixed(2)}</p>
+                                                </div>
+                                                ${q.sellerNotes ? `<p><strong>Seller's Notes:</strong> ${q.sellerNotes}</p>` : ''}
+                                            </div>
+                                        ` : `
+                                            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                                                <p>⏳ Waiting for seller to submit their quotation.</p>
+                                                <p>The seller will click the link in the PDF to submit their prices.</p>
+                                            </div>
+                                        `}
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <script>
+                function toggleDetails(id) {
+                    const row = document.getElementById('details-' + id);
+                    if (row.style.display === 'none') {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            </script>
+        </body>
+        </html>
+    `);
 });
 
 const PORT = 3000;

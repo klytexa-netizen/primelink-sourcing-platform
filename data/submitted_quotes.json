@@ -1,1 +1,31 @@
-[]
+[
+  {
+    "quotationId": "24887354-1f41-47c8-a20f-ab7f38882a86",
+    "customerCompany": "Shandong Jiusheng Intelligent Equipment Co. Ltd.",
+    "customerName": "Emily Guo",
+    "customerEmail": "lynn@sd.jiusheng.com",
+    "submittedPrices": [
+      {
+        "name": "truck crane",
+        "quantity": 1,
+        "price": 1000
+      },
+      {
+        "name": "off road forklift ",
+        "quantity": 1,
+        "price": 1990
+      },
+      {
+        "name": "hanging basket",
+        "quantity": 1,
+        "price": 19000.01
+      }
+    ],
+    "sellerNotes": "",
+    "taxRate": 0,
+    "shippingCost": 0,
+    "subtotal": 21990.01,
+    "grandTotal": 21990.01,
+    "submittedAt": "2026-04-17T16:52:09.180Z"
+  }
+]

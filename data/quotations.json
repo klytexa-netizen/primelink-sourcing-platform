@@ -87,5 +87,84 @@
     "createdAt": "2026-04-17T16:01:04.496Z",
     "validUntil": "2026-05-17T16:01:04.496Z",
     "status": "pending"
+  },
+  {
+    "id": "f67b1e56-11cd-45f7-810a-194728ed1601",
+    "customerCompany": "Shandong Jiusheng Intelligent Equipment Co. Ltd.",
+    "customerName": "Emily Guo",
+    "customerEmail": "lynn@sd.jiusheng.com",
+    "customerPhone": "",
+    "items": [
+      {
+        "name": "Truck Crane ",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "name": "Off road forklift crane ",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "name": "hanging basket ",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ],
+    "notes": "hello",
+    "createdAt": "2026-04-17T16:41:06.163Z",
+    "validUntil": "2026-05-17T16:41:06.163Z",
+    "status": "pending"
+  },
+  {
+    "id": "24887354-1f41-47c8-a20f-ab7f38882a86",
+    "customerCompany": "Shandong Jiusheng Intelligent Equipment Co. Ltd.",
+    "customerName": "Emily Guo",
+    "customerEmail": "lynn@sd.jiusheng.com",
+    "customerPhone": "",
+    "items": [
+      {
+        "name": "truck crane",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "name": "off road forklift ",
+        "quantity": 1,
+        "unit": "pcs"
+      },
+      {
+        "name": "hanging basket",
+        "quantity": 1,
+        "unit": "pcs"
+      }
+    ],
+    "notes": "hello",
+    "createdAt": "2026-04-17T16:50:59.301Z",
+    "validUntil": "2026-05-17T16:50:59.301Z",
+    "status": "quoted",
+    "submittedPrices": [
+      {
+        "name": "truck crane",
+        "quantity": 1,
+        "price": 1000
+      },
+      {
+        "name": "off road forklift ",
+        "quantity": 1,
+        "price": 1990
+      },
+      {
+        "name": "hanging basket",
+        "quantity": 1,
+        "price": 19000.01
+      }
+    ],
+    "sellerNotes": "",
+    "taxRate": 0,
+    "shippingCost": 0,
+    "submittedAt": "2026-04-17T16:52:09.178Z",
+    "subtotal": 21990.01,
+    "grandTotal": 21990.01
   }
 ]
